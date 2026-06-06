@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IRON OLYMPUS — Forge Your Legacy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<style>
+:root{
+  --obsidian:#0A0A0B;
+  --charcoal:#141416;
+  --crimson:#FF4500;
+  --platinum:#E2E8F0;
+  --iron-gray:#71717A;
+  --white:#FFFFFF;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--obsidian);
+  color:var(--white);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* CUSTOM CURSOR */
+#cursor{
+  width:14px;height:14px;
+  background:var(--crimson);
+  border-radius:50%;
+  position:fixed;top:0;left:0;
+  pointer-events:none;
+  z-index:99999;
+  transform:translate(-50%,-50%);
+  transition:transform 0.1s ease,width 0.2s,height 0.2s,background 0.2s;
+  mix-blend-mode:difference;
+}
+#cursor-trail{
+  width:36px;height:36px;
+  border:1px solid rgba(255,69,0,0.5);
+  border-radius:50%;
+  position:fixed;top:0;left:0;
+  pointer-events:none;
+  z-index:99998;
+  transform:translate(-50%,-50%);
+  transition:all 0.15s ease;
+}
+body:hover #cursor{transform:translate(-50%,-50%) scale(1);}
+
+/* PRELOADER */
+#preloader{
+  position:fixed;inset:0;
+  background:#000;
+  z-index:99990;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#preloader-top,#preloader-bottom{
+  position:absolute;
+  width:100%;height:50%;
+  background:#000;
+  z-index:2;
+  transition:transform 0.8s cubic-bezier(0.76,0,0.24,1);
+}
+#preloader-top{top:0;}
+#preloader-bottom{bottom:0;}
+#preloader.open #preloader-top{transform:translateY(-100%);}
+#preloader.open #preloader-bottom{transform:translateY(100%);}
+
+#loader-canvas{width:200px;height:200px;position:relative;z-index:1;}
+#loader-text{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(12px,2vw,18px);
+  letter-spacing:0.4em;
+  color:var(--crimson);
+  margin-top:24px;
+  position:relative;z-index:1;
+  min-height:28px;
+  text-align:center;
+}
+#progress-bar-wrap{
+  width:240px;height:2px;
+  background:rgba(255,255,255,0.1);
+  margin-top:20px;
+  position:relative;z-index:1;
+  border-radius:2px;
+  overflow:hidden;
+}
+#progress-bar{
+  height:100%;width:0%;
+  background:var(--crimson);
+  border-radius:2px;
+  box-shadow:0 0 12px var(--crimson);
+  transition:width 0.05s linear;
+}
+#progress-pct{
+  font-family:'Syne',sans-serif;
+  font-size:11px;
+  letter-spacing:0.3em;
+  color:var(--iron-gray);
+  margin-top:8px;
+  position:relative;z-index:1;
+}
+
+/* GLITCH ANIMATION */
+@keyframes glitch{
+  0%{clip-path:inset(0 0 95% 0);transform:translateX(-4px);}
+  10%{clip-path:inset(30% 0 50% 0);transform:translateX(4px);}
+  20%{clip-path:inset(60% 0 15% 0);transform:translateX(-2px);}
+  30%{clip-path:inset(85% 0 0% 0);transform:translateX(2px);}
+  40%{clip-path:inset(40% 0 40% 0);transform:translateX(-3px);}
+  50%{clip-path:inset(0 0 0 0);transform:translateX(0);}
+  100%{clip-path:inset(0 0 0 0);transform:translateX(0);}
+}
+.glitch-text{position:relative;}
+.glitch-text::before,.glitch-text::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;
+  width:100%;
+}
+.glitch-text::before{color:var(--crimson);animation:glitch 0.3s ease-in-out infinite;}
+.glitch-text::after{color:cyan;animation:glitch 0.3s ease-in-out infinite reverse;opacity:0.5;}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;width:100%;
+  z-index:1000;
+  padding:20px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,10,11,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,69,0,0.1);
+  transition:all 0.3s ease;
+}
+.nav-logo{
+  font-family:'Syne',sans-serif;
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:0.15em;
+  color:var(--white);
+}
+.nav-logo span{color:var(--crimson);}
+.nav-links{display:flex;gap:32px;list-style:none;}
+.nav-links a{
+  font-size:12px;
+  letter-spacing:0.2em;
+  color:var(--iron-gray);
+  text-decoration:none;
+  text-transform:uppercase;
+  transition:color 0.2s;
+  position:relative;
+}
+.nav-links a::after{
+  content:'';
+  position:absolute;bottom:-4px;left:0;
+  width:0;height:1px;
+  background:var(--crimson);
+  transition:width 0.3s ease;
+}
+.nav-links a:hover{color:var(--white);}
+.nav-links a:hover::after{width:100%;}
+.nav-cta{
+  background:var(--crimson);
+  color:#fff;
+  border:none;
+  padding:10px 24px;
+  font-family:'Syne',sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  cursor:none;
+  transition:all 0.2s;
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 100%,0 100%);
+}
+.nav-cta:hover{background:#ff6a2a;transform:scale(1.05);}
+.nav-socials{display:flex;gap:16px;align-items:center;}
+.nav-socials a{color:var(--iron-gray);transition:color 0.2s;text-decoration:none;}
+.nav-socials a:hover{color:var(--crimson);}
+
+/* HERO */
+#hero{
+  min-height:100vh;
+  position:relative;
+  overflow:hidden;
+  display:flex;align-items:center;
+}
+#hero-canvas{
+  position:absolute;inset:0;
+  z-index:0;
+  opacity:0.7;
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,69,0,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,69,0,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  z-index:0;
+}
+.hero-content{
+  position:relative;z-index:2;
+  padding:160px 48px 80px;
+  max-width:1400px;
+  width:100%;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:60px;
+  align-items:center;
+}
+.hero-left{}
+.eyebrow{
+  display:flex;align-items:center;gap:10px;
+  font-size:11px;
+  letter-spacing:0.4em;
+  color:var(--crimson);
+  text-transform:uppercase;
+  margin-bottom:28px;
+  font-weight:600;
+}
+.blink-dot{
+  width:8px;height:8px;
+  background:var(--crimson);
+  border-radius:50%;
+  box-shadow:0 0 8px var(--crimson);
+  animation:blink 1s infinite;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.hero-headline{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(48px,7vw,96px);
+  font-weight:800;
+  line-height:0.92;
+  text-transform:uppercase;
+  letter-spacing:-0.02em;
+  margin-bottom:28px;
+}
+.headline-crimson{
+  color:var(--crimson);
+  text-shadow:0 0 40px rgba(255,69,0,0.4);
+  display:block;
+}
+.hero-sub{
+  font-size:clamp(14px,1.5vw,17px);
+  line-height:1.7;
+  color:var(--iron-gray);
+  max-width:480px;
+  margin-bottom:44px;
+}
+.hero-cta-group{display:flex;gap:16px;flex-wrap:wrap;}
+.btn-primary{
+  background:var(--crimson);
+  color:#fff;
+  border:none;
+  padding:16px 32px;
+  font-family:'Syne',sans-serif;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  cursor:none;
+  position:relative;
+  overflow:hidden;
+  transition:all 0.3s;
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 100%,12px 100%);
+  text-decoration:none;
+  display:inline-block;
+}
+.btn-primary::before{
+  content:'';
+  position:absolute;inset:0;
+  background:rgba(255,255,255,0.1);
+  transform:translateX(-100%);
+  transition:transform 0.3s ease;
+}
+.btn-primary:hover::before{transform:translateX(0);}
+.btn-primary:hover{
+  box-shadow:0 0 30px rgba(255,69,0,0.6),0 0 60px rgba(255,69,0,0.2);
+  transform:scale(1.03);
+}
+.btn-secondary{
+  background:transparent;
+  color:var(--platinum);
+  border:1px solid var(--platinum);
+  padding:16px 32px;
+  font-family:'Syne',sans-serif;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  cursor:none;
+  transition:all 0.3s;
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 100%,12px 100%);
+  text-decoration:none;
+  display:inline-block;
+  position:relative;
+}
+.btn-secondary:hover{
+  background:rgba(226,232,240,0.1);
+  border-color:var(--crimson);
+  color:var(--crimson);
+}
+.hero-stats{
+  display:flex;gap:40px;
+  margin-top:48px;
+  padding-top:32px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.stat-item{}
+.stat-number{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(28px,4vw,44px);
+  font-weight:800;
+  color:var(--white);
+  line-height:1;
+}
+.stat-number span{color:var(--crimson);}
+.stat-label{
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--iron-gray);
+  text-transform:uppercase;
+  margin-top:4px;
+}
+.hero-right{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  height:500px;
+}
+#dumbbell-canvas{
+  width:100%;
+  height:100%;
+  position:relative;z-index:2;
+}
+
+/* MARQUEE */
+.marquee-wrap{
+  background:var(--crimson);
+  overflow:hidden;
+  padding:14px 0;
+  position:relative;z-index:5;
+}
+.marquee-track{
+  display:flex;
+  white-space:nowrap;
+  animation:marquee 18s linear infinite;
+  gap:0;
+}
+.marquee-track span{
+  font-family:'Syne',sans-serif;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:0.25em;
+  text-transform:uppercase;
+  padding:0 32px;
+  color:#fff;
+}
+@keyframes marquee{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(-50%);}
+}
+
+/* HOOK SECTION */
+#hook{
+  padding:100px 48px;
+  max-width:1400px;
+  margin:0 auto;
+}
+.hook-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:48px;
+}
+.section-eyebrow{
+  font-size:11px;letter-spacing:0.4em;
+  color:var(--crimson);text-transform:uppercase;
+  margin-bottom:12px;font-weight:600;
+}
+.section-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(32px,5vw,64px);
+  font-weight:800;
+  line-height:1;
+  text-transform:uppercase;
+  letter-spacing:-0.02em;
+}
+.photo-grid{
+  display:grid;
+  grid-template-columns:1.2fr 0.8fr 1fr 0.9fr;
+  grid-template-rows:auto auto;
+  gap:8px;
+  height:580px;
+}
+.photo-card{
+  position:relative;
+  overflow:hidden;
+  cursor:none;
+  background:var(--charcoal);
+}
+.photo-card:nth-child(1){grid-row:span 2;}
+.photo-card:nth-child(3){grid-row:span 2;}
+.photo-bg{
+  position:absolute;inset:0;
+  background-size:cover;
+  background-position:center;
+  filter:grayscale(100%) contrast(1.2);
+  transform:scale(1.05);
+  transition:transform 0.6s ease,filter 0.4s ease;
+}
+.photo-card:hover .photo-bg{
+  transform:scale(1.12);
+  filter:grayscale(0%) contrast(1.1);
+}
+.photo-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(0deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.1) 60%);
+  z-index:1;
+}
+.photo-tagline{
+  position:absolute;bottom:20px;left:20px;
+  z-index:2;
+  font-family:'Syne',sans-serif;
+  font-size:clamp(16px,2vw,22px);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  line-height:1.1;
+}
+.photo-tagline-sub{
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--crimson);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:600;
+  margin-top:4px;
+}
+.shutter-overlay{
+  position:absolute;inset:0;
+  background:var(--crimson);
+  z-index:3;
+  transform:scaleX(0);
+  transform-origin:right;
+}
+.photo-card.flash .shutter-overlay{
+  animation:shutter 0.4s ease forwards;
+}
+@keyframes shutter{
+  0%{transform:scaleX(0);transform-origin:left;}
+  50%{transform:scaleX(1);transform-origin:left;}
+  51%{transform:scaleX(1);transform-origin:right;}
+  100%{transform:scaleX(0);transform-origin:right;}
+}
+
+/* AMENITIES */
+#amenities{
+  padding:100px 48px;
+  background:var(--charcoal);
+}
+.amenities-inner{max-width:1400px;margin:0 auto;}
+.amenities-header{text-align:center;margin-bottom:64px;}
+.steel-cards{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:2px;
+}
+.steel-card{
+  background:var(--obsidian);
+  padding:48px;
+  position:relative;
+  overflow:hidden;
+  cursor:none;
+  transition:all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+  border:1px solid rgba(255,255,255,0.04);
+}
+.steel-card::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,69,0,0.08) 0%,transparent 60%);
+  opacity:0;
+  transition:opacity 0.4s;
+}
+.steel-card:hover::before{opacity:1;}
+.steel-card:hover{
+  border-color:rgba(255,69,0,0.3);
+  transform:translateY(-4px);
+}
+.card-icon{
+  width:56px;height:56px;
+  background:rgba(255,69,0,0.1);
+  border:1px solid rgba(255,69,0,0.3);
+  border-radius:0;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:28px;
+  font-size:24px;
+  transition:all 0.4s;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+}
+.steel-card:hover .card-icon{
+  background:var(--crimson);
+  transform:translateY(-4px) scale(1.1);
+  box-shadow:0 8px 24px rgba(255,69,0,0.4);
+}
+.card-title{
+  font-family:'Syne',sans-serif;
+  font-size:22px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  margin-bottom:12px;
+  transition:color 0.3s;
+}
+.steel-card:hover .card-title{color:var(--crimson);}
+.card-desc{
+  font-size:14px;
+  line-height:1.7;
+  color:var(--iron-gray);
+}
+.card-tag{
+  display:inline-block;
+  margin-top:20px;
+  font-size:10px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color:var(--crimson);
+  border:1px solid rgba(255,69,0,0.3);
+  padding:4px 12px;
+}
+.card-number{
+  position:absolute;top:24px;right:28px;
+  font-family:'Syne',sans-serif;
+  font-size:64px;
+  font-weight:800;
+  color:rgba(255,255,255,0.03);
+  line-height:1;
+}
+
+/* GAMES */
+#games{
+  padding:100px 48px;
+  max-width:1400px;
+  margin:0 auto;
+}
+.games-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:32px;
+  margin-top:64px;
+}
+
+/* PR PREDICTOR */
+.game-card{
+  background:var(--charcoal);
+  border:1px solid rgba(255,255,255,0.06);
+  padding:48px;
+  position:relative;
+  overflow:hidden;
+}
+.game-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--crimson),transparent);
+}
+.game-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(18px,2.5vw,28px);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  margin-bottom:8px;
+}
+.game-sub{font-size:13px;color:var(--iron-gray);margin-bottom:32px;line-height:1.6;}
+.pr-form{}
+.lift-selector{
+  display:flex;gap:8px;margin-bottom:28px;
+}
+.lift-btn{
+  flex:1;padding:12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--iron-gray);
+  font-family:'Syne',sans-serif;
+  font-size:11px;font-weight:700;
+  letter-spacing:0.2em;text-transform:uppercase;
+  cursor:none;transition:all 0.2s;
+}
+.lift-btn.active,.lift-btn:hover{
+  background:var(--crimson);color:#fff;
+  border-color:var(--crimson);
+}
+.slider-group{margin-bottom:24px;}
+.slider-label{
+  display:flex;justify-content:space-between;
+  font-size:11px;letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--iron-gray);
+  margin-bottom:10px;
+}
+.slider-value{color:var(--white);font-weight:700;}
+input[type=range]{
+  width:100%;
+  -webkit-appearance:none;
+  height:3px;
+  background:rgba(255,255,255,0.1);
+  border-radius:2px;
+  outline:none;
+  cursor:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:18px;height:18px;
+  background:var(--crimson);
+  border-radius:50%;
+  box-shadow:0 0 10px rgba(255,69,0,0.5);
+  cursor:none;
+  transition:transform 0.2s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3);}
+.pr-output{
+  display:none;
+  margin-top:24px;
+  padding:20px;
+  border:1px solid var(--crimson);
+  background:rgba(255,69,0,0.05);
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.pr-output.visible{display:block;}
+.pr-output-label{
+  font-size:10px;letter-spacing:0.3em;
+  text-transform:uppercase;color:var(--iron-gray);
+}
+.pr-output-value{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(28px,4vw,48px);
+  font-weight:800;
+  color:var(--crimson);
+  text-shadow:0 0 20px rgba(255,69,0,0.5);
+}
+.pr-output-msg{
+  font-size:12px;color:var(--platinum);
+  margin-top:8px;line-height:1.5;
+}
+
+/* TRIVIA */
+.quiz-question{
+  font-size:18px;
+  font-weight:600;
+  line-height:1.5;
+  margin-bottom:28px;
+  min-height:60px;
+}
+.quiz-options{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{
+  padding:14px 20px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--platinum);
+  font-size:13px;
+  cursor:none;
+  transition:all 0.2s;
+  text-align:left;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.quiz-opt:hover{background:rgba(255,69,0,0.1);border-color:var(--crimson);color:var(--white);}
+.quiz-opt.correct{background:rgba(0,200,100,0.15);border-color:#00c864;color:#00c864;}
+.quiz-opt.wrong{background:rgba(255,69,0,0.15);border-color:var(--crimson);color:var(--crimson);}
+.quiz-progress{
+  display:flex;gap:6px;margin-bottom:24px;
+}
+.quiz-pip{
+  flex:1;height:3px;
+  background:rgba(255,255,255,0.1);
+  border-radius:2px;
+  transition:background 0.3s;
+}
+.quiz-pip.done{background:var(--crimson);}
+.quiz-result{
+  display:none;text-align:center;padding:20px 0;
+}
+.quiz-result.visible{display:block;}
+.result-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(20px,3vw,32px);
+  font-weight:800;
+  text-transform:uppercase;
+  color:var(--crimson);
+  margin-bottom:12px;
+}
+.result-desc{font-size:14px;color:var(--iron-gray);line-height:1.6;margin-bottom:24px;}
+
+/* PRICING */
+#pricing{
+  padding:100px 48px;
+  background:var(--charcoal);
+}
+.pricing-inner{max-width:1400px;margin:0 auto;}
+.pricing-header{text-align:center;margin-bottom:80px;}
+.pricing-grid{
+  display:grid;
+  grid-template-columns:1fr 1.1fr 1fr;
+  gap:0;
+  align-items:stretch;
+}
+.price-pillar{
+  padding:56px 40px;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  border:1px solid rgba(255,255,255,0.05);
+  transition:transform 0.3s;
+}
+.price-pillar:hover{transform:translateY(-8px);}
+.price-pillar.featured{
+  background:rgba(255,69,0,0.04);
+  border:1px solid var(--crimson);
+  transform:scale(1.02);
+  position:relative;
+  z-index:2;
+}
+.price-pillar.featured:hover{transform:scale(1.02) translateY(-8px);}
+.price-pillar.platinum-tier{
+  background:linear-gradient(160deg,rgba(226,232,240,0.04) 0%,transparent 60%);
+  border:1px solid rgba(226,232,240,0.15);
+}
+.tier-badge{
+  display:inline-block;
+  font-size:9px;letter-spacing:0.4em;
+  text-transform:uppercase;
+  color:var(--iron-gray);
+  border:1px solid rgba(255,255,255,0.1);
+  padding:5px 14px;
+  margin-bottom:32px;
+  width:fit-content;
+}
+.tier-badge.hot{
+  background:var(--crimson);
+  border-color:var(--crimson);
+  color:#fff;
+}
+.tier-badge.platinum{
+  border-color:rgba(226,232,240,0.4);
+  color:var(--platinum);
+}
+.tier-name{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(18px,2.5vw,28px);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  margin-bottom:8px;
+}
+.tier-price{
+  display:flex;align-items:flex-start;gap:4px;
+  margin:24px 0;
+}
+.price-dollar{
+  font-family:'Syne',sans-serif;
+  font-size:20px;
+  font-weight:700;
+  color:var(--iron-gray);
+  margin-top:8px;
+}
+.price-amount{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(52px,7vw,80px);
+  font-weight:800;
+  line-height:1;
+}
+.price-mo{font-size:14px;color:var(--iron-gray);align-self:flex-end;margin-bottom:8px;}
+.tier-features{
+  list-style:none;
+  flex:1;
+  margin:24px 0 32px;
+}
+.tier-features li{
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  font-size:13px;
+  color:var(--platinum);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.tier-features li::before{
+  content:'▸';
+  color:var(--crimson);
+  font-size:10px;
+}
+.tier-features li.inactive{
+  color:var(--iron-gray);
+  text-decoration:line-through;
+}
+.tier-features li.inactive::before{color:var(--iron-gray);}
+.pulse-border{
+  position:absolute;inset:-1px;
+  border:1px solid var(--crimson);
+  animation:pulse-border 2s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes pulse-border{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,69,0,0.4);}
+  50%{opacity:0.7;box-shadow:0 0 20px 4px rgba(255,69,0,0.2);}
+}
+.ribbon{
+  position:absolute;top:24px;right:-28px;
+  background:var(--crimson);
+  color:#fff;
+  font-family:'Syne',sans-serif;
+  font-size:9px;font-weight:700;
+  letter-spacing:0.2em;text-transform:uppercase;
+  padding:5px 40px;
+  transform:rotate(45deg);
+}
+
+/* TESTIMONIALS */
+#testimonials{
+  padding:100px 0;
+  overflow:hidden;
+}
+.testimonials-inner{max-width:1400px;margin:0 auto;padding:0 48px;}
+.testimonials-header{text-align:center;margin-bottom:64px;}
+.carousel-wrap{
+  overflow:hidden;
+  position:relative;
+}
+.carousel-track{
+  display:flex;
+  gap:24px;
+  animation:carousel 30s linear infinite;
+  width:max-content;
+}
+.carousel-track.reverse{
+  animation:carousel-reverse 35s linear infinite;
+  margin-top:16px;
+}
+@keyframes carousel{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(-50%);}
+}
+@keyframes carousel-reverse{
+  0%{transform:translateX(-50%);}
+  100%{transform:translateX(0);}
+}
+.carousel-wrap:hover .carousel-track{animation-play-state:paused;}
+.testimonial-card{
+  background:var(--charcoal);
+  border:1px solid rgba(255,255,255,0.05);
+  padding:32px;
+  width:380px;
+  flex-shrink:0;
+  position:relative;
+  transition:border-color 0.3s;
+}
+.testimonial-card::before{
+  content:'"';
+  position:absolute;top:16px;right:24px;
+  font-family:'Syne',sans-serif;
+  font-size:80px;
+  color:rgba(255,69,0,0.1);
+  line-height:1;
+}
+.testimonial-card:hover{border-color:rgba(255,69,0,0.3);}
+.t-stars{color:var(--crimson);font-size:12px;letter-spacing:4px;margin-bottom:14px;}
+.t-quote{
+  font-size:14px;line-height:1.7;
+  color:var(--platinum);margin-bottom:20px;
+  font-style:italic;
+}
+.t-author{display:flex;align-items:center;gap:12px;}
+.t-avatar{
+  width:40px;height:40px;
+  border-radius:50%;
+  background:var(--crimson);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;
+  font-weight:800;font-size:14px;
+}
+.t-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.t-detail{font-size:11px;color:var(--iron-gray);letter-spacing:0.2em;text-transform:uppercase;}
+.t-gain{
+  margin-top:16px;
+  padding:10px 14px;
+  background:rgba(255,69,0,0.08);
+  border-left:2px solid var(--crimson);
+  font-size:11px;color:var(--crimson);
+  letter-spacing:0.15em;text-transform:uppercase;
+  font-weight:700;
+}
+
+/* FOOTER */
+#footer{
+  background:var(--obsidian);
+  border-top:1px solid rgba(255,255,255,0.05);
+  position:relative;
+  overflow:hidden;
+}
+.footer-cta-section{
+  padding:100px 48px;
+  max-width:1400px;margin:0 auto;
+  text-align:center;
+  position:relative;
+}
+.footer-headline{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(36px,6vw,80px);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:-0.02em;
+  line-height:1;
+  margin-bottom:24px;
+}
+.footer-sub{
+  font-size:16px;color:var(--iron-gray);
+  max-width:500px;margin:0 auto 48px;
+  line-height:1.6;
+}
+.email-form{
+  display:flex;
+  max-width:580px;
+  margin:0 auto 64px;
+  border:1px solid rgba(255,255,255,0.1);
+  overflow:hidden;
+}
+.email-input{
+  flex:1;
+  background:transparent;
+  border:none;
+  padding:18px 24px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;
+  letter-spacing:0.1em;
+  color:var(--white);
+  outline:none;
+}
+.email-input::placeholder{
+  color:var(--iron-gray);
+  font-size:11px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+}
+.email-submit{
+  background:var(--crimson);
+  border:none;
+  padding:18px 32px;
+  font-family:'Syne',sans-serif;
+  font-size:11px;font-weight:700;
+  letter-spacing:0.2em;text-transform:uppercase;
+  color:#fff;cursor:none;
+  transition:background 0.2s;
+}
+.email-submit:hover{background:#ff6a2a;}
+.footer-social-row{
+  display:flex;gap:20px;justify-content:center;
+  margin-bottom:64px;
+}
+.social-icon-btn{
+  width:48px;height:48px;
+  border:1px solid rgba(255,255,255,0.1);
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;
+  color:var(--iron-gray);
+  transition:all 0.3s;
+  font-size:18px;
+}
+.social-icon-btn:hover{
+  border-color:var(--crimson);
+  color:var(--crimson);
+  box-shadow:0 0 16px rgba(255,69,0,0.3);
+  transform:translateY(-3px);
+}
+.footer-bottom{
+  border-top:1px solid rgba(255,255,255,0.05);
+  padding:24px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.footer-logo{
+  font-family:'Syne',sans-serif;
+  font-size:18px;font-weight:800;
+  letter-spacing:0.1em;
+}
+.footer-logo span{color:var(--crimson);}
+.footer-links{display:flex;gap:24px;list-style:none;}
+.footer-links a{
+  font-size:11px;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--iron-gray);text-decoration:none;
+  position:relative;
+  transition:color 0.2s;
+}
+.footer-links a:hover{color:var(--white);}
+.footer-links a::after{
+  content:'';
+  position:absolute;left:0;right:0;top:50%;
+  height:1px;background:var(--crimson);
+  transform:scaleX(0);
+  transition:transform 0.3s ease;
+}
+.footer-links a:hover::after{transform:scaleX(1);}
+.footer-copy{font-size:11px;color:var(--iron-gray);}
+
+/* MISC HELPERS */
+.section-divider{
+  width:60px;height:3px;
+  background:var(--crimson);
+  margin:20px 0;
+}
+.reveal-up{
+  opacity:0;
+  transform:translateY(40px);
+  transition:opacity 0.8s ease,transform 0.8s ease;
+}
+.reveal-up.revealed{opacity:1;transform:translateY(0);}
+
+.screen-shake{
+  animation:shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both;
+}
+@keyframes shake{
+  10%,90%{transform:translate3d(-2px,0,0);}
+  20%,80%{transform:translate3d(4px,0,0);}
+  30%,50%,70%{transform:translate3d(-6px,0,0);}
+  40%,60%{transform:translate3d(6px,0,0);}
+}
+
+/* FLOATING PARTICLES BG */
+.particle-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+
+/* BACKGROUND GLOW ORBS */
+.glow-orb{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(100px);
+  pointer-events:none;
+}
+
+/* MOBILE */
+@media(max-width:1024px){
+  .hero-content{grid-template-columns:1fr;padding:140px 24px 60px;}
+  .hero-right{height:300px;}
+  .photo-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto auto;height:auto;}
+  .photo-card:nth-child(1),.photo-card:nth-child(3){grid-row:span 1;}
+  .photo-card{height:240px;}
+  .steel-cards{grid-template-columns:1fr;}
+  .games-grid{grid-template-columns:1fr;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .price-pillar.featured{transform:none;}
+  nav{padding:16px 24px;}
+  .nav-links{display:none;}
+  #hook,#games,#testimonials .testimonials-inner,#footer .footer-cta-section{padding-left:24px;padding-right:24px;}
+  #amenities{padding:60px 24px;}
+  #pricing{padding:60px 24px;}
+  .footer-bottom{flex-direction:column;gap:20px;text-align:center;}
+  .footer-links{flex-wrap:wrap;justify-content:center;}
+}
+
+/* SCROLL PROGRESS */
+#scroll-progress{
+  position:fixed;top:0;left:0;
+  height:2px;
+  background:var(--crimson);
+  z-index:10001;
+  width:0%;
+  transition:width 0.1s;
+  box-shadow:0 0 8px var(--crimson);
+}
+
+/* BACK TO TOP */
+#back-to-top{
+  position:fixed;bottom:32px;right:32px;
+  width:48px;height:48px;
+  background:var(--crimson);
+  border:none;
+  color:#fff;font-size:18px;
+  cursor:none;
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;
+  opacity:0;
+  transform:translateY(20px);
+  transition:all 0.3s;
+  clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);
+}
+#back-to-top.visible{opacity:1;transform:translateY(0);}
+#back-to-top:hover{background:#ff6a2a;transform:translateY(-3px);}
+
+/* PHOTO BACKGROUNDS - gradients representing gym scenes */
+.photo-card:nth-child(1) .photo-bg{
+  background:linear-gradient(160deg,#1a0a00 0%,#2d1208 50%,#0a0000 100%);
+  background-image:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600"><rect fill="%23120806"/><text x="50%" y="50%" text-anchor="middle" fill="%23ff4500" font-size="120" font-family="Arial" opacity="0.1">💪</text></svg>');
+}
+.photo-card:nth-child(2) .photo-bg{
+  background:linear-gradient(200deg,#0a0a0f 0%,#1a1020 100%);
+}
+.photo-card:nth-child(3) .photo-bg{
+  background:linear-gradient(140deg,#0a0505 0%,#1f0f0f 100%);
+}
+.photo-card:nth-child(4) .photo-bg{
+  background:linear-gradient(180deg,#080808 0%,#1a0800 100%);
+}
+
+/* PHOTO CARD CUSTOM BACKGROUNDS */
+.photo-bg-1{
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 80%,rgba(255,69,0,0.2) 0%,transparent 70%),
+    linear-gradient(160deg,#0f0502 0%,#1a0806 100%);
+}
+.photo-bg-2{
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 70%,rgba(255,69,0,0.15) 0%,transparent 60%),
+    linear-gradient(200deg,#08080f 0%,#120a1a 100%);
+}
+.photo-bg-3{
+  background:
+    radial-gradient(ellipse 60% 80% at 70% 50%,rgba(255,69,0,0.18) 0%,transparent 60%),
+    linear-gradient(140deg,#0a0303 0%,#1f0808 100%);
+}
+.photo-bg-4{
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,69,0,0.12) 0%,transparent 60%),
+    linear-gradient(180deg,#070707 0%,#140600 100%);
+}
+
+/* Dumbbell visual */
+.dumbbell-visual{
+  position:relative;
+  width:300px;height:300px;
+  display:flex;align-items:center;justify-content:center;
+}
+.db-ring{
+  position:absolute;
+  border-radius:50%;
+  border:1px solid rgba(255,69,0,0.2);
+  animation:db-spin 8s linear infinite;
+}
+.db-ring:nth-child(1){width:280px;height:280px;}
+.db-ring:nth-child(2){width:220px;height:220px;animation-direction:reverse;animation-duration:6s;}
+.db-ring:nth-child(3){width:160px;height:160px;animation-duration:4s;}
+@keyframes db-spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+.db-center{
+  width:80px;height:80px;
+  background:linear-gradient(135deg,var(--crimson),#ff8c00);
+  clip-path:polygon(0 20%,20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;
+  box-shadow:0 0 40px rgba(255,69,0,0.6);
+  animation:db-pulse 2s ease-in-out infinite;
+}
+@keyframes db-pulse{
+  0%,100%{box-shadow:0 0 40px rgba(255,69,0,0.6);}
+  50%{box-shadow:0 0 60px rgba(255,69,0,0.9),0 0 100px rgba(255,69,0,0.4);}
+}
+.float-label{
+  position:absolute;
+  font-family:'Syne',sans-serif;
+  font-size:9px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color:var(--crimson);
+}
+.float-label:nth-of-type(1){top:10px;left:50%;transform:translateX(-50%);}
+.float-label:nth-of-type(2){bottom:10px;left:50%;transform:translateX(-50%);}
+.float-label:nth-of-type(3){left:10px;top:50%;transform:translateY(-50%) rotate(-90deg);}
+.float-label:nth-of-type(4){right:10px;top:50%;transform:translateY(-50%) rotate(90deg);}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+
+<!-- SCROLL PROGRESS -->
+<div id="scroll-progress"></div>
+
+<!-- BACK TO TOP -->
+<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- PRELOADER -->
+<div id="preloader">
+  <div id="preloader-top"></div>
+  <div id="preloader-bottom"></div>
+  <canvas id="loader-canvas" width="200" height="200"></canvas>
+  <div id="loader-text">INITIALIZING SYSTEMS...</div>
+  <div id="progress-bar-wrap">
+    <div id="progress-bar"></div>
+  </div>
+  <div id="progress-pct">0%</div>
+</div>
+
+<!-- NAVIGATION -->
+<nav id="navbar">
+  <div class="nav-logo">IRON <span>OLYMPUS</span></div>
+  <ul class="nav-links">
+    <li><a href="#amenities">Arsenal</a></li>
+    <li><a href="#games">Challenge</a></li>
+    <li><a href="#pricing">Forge</a></li>
+    <li><a href="#testimonials">Legends</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="nav-socials">
+      <a href="https://wa.me/15551234567" target="_blank" title="WhatsApp">
+        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </a>
+      <a href="https://instagram.com/ironolympus" target="_blank" title="Instagram">
+        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </a>
+      <a href="https://facebook.com/ironolympus" target="_blank" title="Facebook">
+        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </a>
+    </div>
+    <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">JOIN NOW</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-grid"></div>
+  <div class="glow-orb" style="width:600px;height:600px;background:rgba(255,69,0,0.06);top:-100px;right:-100px;"></div>
+  <div class="glow-orb" style="width:400px;height:400px;background:rgba(255,69,0,0.04);bottom:-100px;left:10%;"></div>
+
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="eyebrow reveal-up">
+        <div class="blink-dot"></div>
+        // THE ULTIMATE TRAINING SANCTUARY
+      </div>
+      <h1 class="hero-headline reveal-up">
+        REJECT<br>MEDIOCRITY.<br>
+        <span class="headline-crimson">EMBRACE<br>YOUR PRIME.</span>
+      </h1>
+      <p class="hero-sub reveal-up">
+        A high-performance facility engineered for those who demand more from their minds and bodies. No excuses. Just pure, unadulterated execution.
+      </p>
+      <div class="hero-cta-group reveal-up">
+        <a href="#pricing" class="btn-primary">CLAIM YOUR 3-DAY VIP PASS</a>
+        <a href="#amenities" class="btn-secondary">TOUR THE SANCTUARY</a>
+      </div>
+      <div class="hero-stats reveal-up">
+        <div class="stat-item">
+          <div class="stat-number"><span id="stat1">0</span>+</div>
+          <div class="stat-label">Elite Members</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number"><span id="stat2">0</span>K</div>
+          <div class="stat-label">Sq Ft Facility</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number"><span id="stat3">0</span>/7</div>
+          <div class="stat-label">Hours Access</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="dumbbell-visual">
+        <div class="db-ring"></div>
+        <div class="db-ring"></div>
+        <div class="db-ring"></div>
+        <div class="db-center">⚡</div>
+        <span class="float-label">STRENGTH</span>
+        <span class="float-label">POWER</span>
+        <span class="float-label">IRON</span>
+        <span class="float-label">ELITE</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee">
+    <span>★ NO WEAKNESS</span><span>★ UNLEASH THE BEAST</span><span>★ 24/7 ACCESS</span>
+    <span>★ ELITE COACHING</span><span>★ HIGH PERFORMANCE ENVIRONMENT</span><span>★ LADIES OF IRON</span>
+    <span>★ FORGE YOUR LEGACY</span><span>★ ZERO EXCUSES</span><span>★ OLYMPUS AWAITS</span>
+    <span>★ NO WEAKNESS</span><span>★ UNLEASH THE BEAST</span><span>★ 24/7 ACCESS</span>
+    <span>★ ELITE COACHING</span><span>★ HIGH PERFORMANCE ENVIRONMENT</span><span>★ LADIES OF IRON</span>
+    <span>★ FORGE YOUR LEGACY</span><span>★ ZERO EXCUSES</span><span>★ OLYMPUS AWAITS</span>
+  </div>
+</div>
+
+<!-- HOOK SECTION -->
+<section id="hook" style="padding:100px 48px;max-width:1400px;margin:0 auto;">
+  <div class="hook-header reveal-up">
+    <div>
+      <div class="section-eyebrow">// THE FORGE</div>
+      <h2 class="section-title">WHERE<br>LEGENDS ARE<br><span style="color:var(--crimson);">MADE</span></h2>
+    </div>
+    <p style="max-width:320px;color:var(--iron-gray);font-size:14px;line-height:1.8;align-self:center;">
+      Every rep is a statement. Every drop of sweat is currency. This is not a gym — this is a crucible.
+    </p>
+  </div>
+  <div class="photo-grid">
+    <div class="photo-card" id="pc1">
+      <div class="photo-bg photo-bg-1"></div>
+      <div class="photo-overlay"></div>
+      <div class="shutter-overlay"></div>
+      <div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-size:80px;opacity:0.12;">🏋️</div>
+      <div class="photo-tagline">
+        WEIGHTS DON'T LIE.
+        <div class="photo-tagline-sub">// STRENGTH ZONE</div>
+      </div>
+    </div>
+    <div class="photo-card" id="pc2">
+      <div class="photo-bg photo-bg-2"></div>
+      <div class="photo-overlay"></div>
+      <div class="shutter-overlay"></div>
+      <div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-size:60px;opacity:0.12;">🔥</div>
+      <div class="photo-tagline">
+        BEAUTY IS<br>THE BEAST.
+        <div class="photo-tagline-sub">// ELITE FEMALE ATHLETES</div>
+      </div>
+    </div>
+    <div class="photo-card" id="pc3">
+      <div class="photo-bg photo-bg-3"></div>
+      <div class="photo-overlay"></div>
+      <div class="shutter-overlay"></div>
+      <div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-size:80px;opacity:0.12;">💪</div>
+      <div class="photo-tagline">
+        EARNED,<br>NOT GIVEN.
+        <div class="photo-tagline-sub">// THE IRON CODE</div>
+      </div>
+    </div>
+    <div class="photo-card" id="pc4">
+      <div class="photo-bg photo-bg-4"></div>
+      <div class="photo-overlay"></div>
+      <div class="shutter-overlay"></div>
+      <div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-size:60px;opacity:0.12;">⚡</div>
+      <div class="photo-tagline">
+        HUNT OR<br>BE HUNTED.
+        <div class="photo-tagline-sub">// FUNCTIONAL POWER</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AMENITIES -->
+<section id="amenities">
+  <div class="amenities-inner">
+    <div class="amenities-header reveal-up">
+      <div class="section-eyebrow">// THE ARSENAL</div>
+      <h2 class="section-title" style="margin-bottom:16px;">WEAPONS OF<br><span style="color:var(--crimson);">MASS CONSTRUCTION</span></h2>
+      <div class="section-divider" style="margin:0 auto;"></div>
+    </div>
+    <div class="steel-cards">
+      <div class="steel-card reveal-up">
+        <div class="card-number">01</div>
+        <div class="card-icon">🏋️</div>
+        <div class="card-title">Monolithic Strength Zone</div>
+        <p class="card-desc">Custom-fabricated Eleiko plates, 100kg dumbbell sets, 15 specialized power racks, 6 dedicated deadlift platforms, and Olympic lifting bays with rubber flooring engineered to absorb maximum impact.</p>
+        <span class="card-tag">// STRENGTH</span>
+      </div>
+      <div class="steel-card reveal-up">
+        <div class="card-number">02</div>
+        <div class="card-icon">🏃</div>
+        <div class="card-title">Hyper-Oxygenated Cardio Deck</div>
+        <p class="card-desc">Premium curved treadmills, 20 Assault BikeElite stations, StairMasters, and ski ergs — all elevated on a mezzanine overlooking the main arena floor. Train above. Perform above. Be above.</p>
+        <span class="card-tag">// CARDIO</span>
+      </div>
+      <div class="steel-card reveal-up">
+        <div class="card-number">03</div>
+        <div class="card-icon">❄️</div>
+        <div class="card-title">The Recovery Lab</div>
+        <p class="card-desc">Full-body cryotherapy chambers at -150°C, infrared sauna pods, hyperbaric oxygen chambers, contrast therapy pools, and on-site certified sports massage therapists. Recovery is training.</p>
+        <span class="card-tag" style="border-color:rgba(0,200,255,0.5);color:rgba(0,200,255,0.8);">// RECOVERY</span>
+      </div>
+      <div class="steel-card reveal-up">
+        <div class="card-number">04</div>
+        <div class="card-icon">📊</div>
+        <div class="card-title">Alpha Coaching & Bio-Metrics</div>
+        <p class="card-desc">Personalized bio-tracking with InBody scans, hormonal optimization alignment, WHOOP integrations, and Olympic-certified coaches. Every session is a data point. Every data point is a weapon.</p>
+        <span class="card-tag">// COACHING</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GAMES -->
+<section id="games">
+  <div class="reveal-up" style="margin-bottom:0;">
+    <div class="section-eyebrow">// THE CHALLENGE</div>
+    <h2 class="section-title">PROVE YOUR<br><span style="color:var(--crimson);">POTENTIAL</span></h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="games-grid">
+
+    <!-- PR PREDICTOR -->
+    <div class="game-card">
+      <div class="game-title">PR Predictor &amp; Dopamine Multiplier</div>
+      <p class="game-sub">Enter your current stats. Discover what Iron Olympus programming can unlock in 90 days. Warning: results may be life-altering.</p>
+
+      <div class="lift-selector" id="liftSelector">
+        <button class="lift-btn active" data-lift="Bench Press" onclick="selectLift(this)">BENCH</button>
+        <button class="lift-btn" data-lift="Squat" onclick="selectLift(this)">SQUAT</button>
+        <button class="lift-btn" data-lift="Deadlift" onclick="selectLift(this)">DEADLIFT</button>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>BODY WEIGHT</span>
+          <span class="slider-value"><span id="bwVal">80</span> kg</span>
+        </div>
+        <input type="range" id="bodyWeight" min="50" max="150" value="80" oninput="document.getElementById('bwVal').textContent=this.value">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>CURRENT 1RM</span>
+          <span class="slider-value"><span id="liftVal">100</span> kg</span>
+        </div>
+        <input type="range" id="currentLift" min="20" max="300" value="100" oninput="document.getElementById('liftVal').textContent=this.value">
+      </div>
+
+      <button class="btn-primary" style="width:100%;justify-content:center;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);margin-top:8px;" onclick="calculatePR()">CALCULATE MY POTENTIAL</button>
+
+      <div class="pr-output" id="prOutput">
+        <div class="pr-output-label">YOUR 90-DAY TARGET WITH IRON OLYMPUS</div>
+        <div class="pr-output-value" id="prValue">—</div>
+        <div class="pr-output-msg" id="prMsg">—</div>
+        <a href="#pricing" class="btn-primary" style="display:inline-block;margin-top:16px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 100%,10px 100%);font-size:11px;">BOOK YOUR ASSESSMENT →</a>
+      </div>
+    </div>
+
+    <!-- TRIVIA -->
+    <div class="game-card">
+      <div class="game-title">Testosterone &amp; Grit Trivia</div>
+      <p class="game-sub">5 rapid-fire questions. Test your iron knowledge. No Googling. No excuses. Prove you belong on the Olympus.</p>
+
+      <div class="quiz-progress" id="quizProgress">
+        <div class="quiz-pip" id="pip0"></div>
+        <div class="quiz-pip" id="pip1"></div>
+        <div class="quiz-pip" id="pip2"></div>
+        <div class="quiz-pip" id="pip3"></div>
+        <div class="quiz-pip" id="pip4"></div>
+      </div>
+
+      <div id="quizGame">
+        <div class="quiz-question" id="quizQ">Loading question...</div>
+        <div class="quiz-options" id="quizOpts"></div>
+      </div>
+
+      <div class="quiz-result" id="quizResult">
+        <div class="result-title" id="resultTitle">—</div>
+        <div class="result-desc" id="resultDesc">—</div>
+        <a href="#pricing" class="btn-primary" style="display:inline-block;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 100%,10px 100%);" id="resultCTA">CLAIM YOUR FREE PASS →</a>
+        <br><br>
+        <button onclick="restartQuiz()" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--iron-gray);padding:10px 20px;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:none;margin-top:8px;" class="btn-secondary">RETRY</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="pricing-inner">
+    <div class="pricing-header reveal-up">
+      <div class="section-eyebrow">// THE MEMBERSHIP FORGE</div>
+      <h2 class="section-title">CHOOSE YOUR<br><span style="color:var(--crimson);">TIER OF POWER</span></h2>
+      <div class="section-divider" style="margin:20px auto 0;"></div>
+    </div>
+    <div class="pricing-grid">
+
+      <!-- TIER 1 -->
+      <div class="price-pillar reveal-up" style="background:var(--obsidian);">
+        <span class="tier-badge">IRON INITIATE</span>
+        <div class="tier-name">IRON MIND</div>
+        <p style="font-size:13px;color:var(--iron-gray);line-height:1.6;">Begin your ascent. Full floor access to forge the foundation.</p>
+        <div class="tier-price">
+          <span class="price-dollar">$</span>
+          <span class="price-amount">69</span>
+          <span class="price-mo">/mo</span>
+        </div>
+        <ul class="tier-features">
+          <li>Full gym floor access</li>
+          <li>Cardio deck access</li>
+          <li>Locker room & showers</li>
+          <li>Group fitness classes (2/mo)</li>
+          <li class="inactive">Recovery Lab access</li>
+          <li class="inactive">Coaching sessions</li>
+          <li class="inactive">24/7 keycard access</li>
+          <li class="inactive">Bloodwork consultation</li>
+        </ul>
+        <button class="btn-secondary" style="width:100%;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);cursor:none;" onclick="document.getElementById('footer').scrollIntoView({behavior:'smooth'})">START HERE</button>
+      </div>
+
+      <!-- TIER 2 FEATURED -->
+      <div class="price-pillar featured reveal-up">
+        <div class="pulse-border"></div>
+        <div class="ribbon">MAXIMUM GAINS</div>
+        <span class="tier-badge hot">★ MOST POPULAR</span>
+        <div class="tier-name" style="color:var(--crimson);">OLYMPIAN ELITE</div>
+        <p style="font-size:13px;color:var(--iron-gray);line-height:1.6;">The complete arsenal. For those who refuse to leave gains on the table.</p>
+        <div class="tier-price">
+          <span class="price-dollar" style="color:var(--crimson);">$</span>
+          <span class="price-amount" style="color:var(--crimson);">129</span>
+          <span class="price-mo">/mo</span>
+        </div>
+        <ul class="tier-features">
+          <li>Everything in Iron Mind</li>
+          <li>Full Recovery Lab access</li>
+          <li>Unlimited group classes</li>
+          <li>1 Hybrid coaching session/mo</li>
+          <li>InBody bio-scan (monthly)</li>
+          <li>Nutrition protocol access</li>
+          <li class="inactive">24/7 keycard access</li>
+          <li class="inactive">Bloodwork consultation</li>
+        </ul>
+        <button class="btn-primary" style="width:100%;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);cursor:none;" onclick="document.getElementById('footer').scrollIntoView({behavior:'smooth'})">FORGE YOUR BODY</button>
+      </div>
+
+      <!-- TIER 3 -->
+      <div class="price-pillar platinum-tier reveal-up">
+        <span class="tier-badge platinum">◈ APEX</span>
+        <div class="tier-name" style="color:var(--platinum);">TITAN CONCIERGE</div>
+        <p style="font-size:13px;color:var(--iron-gray);line-height:1.6;">Unlimited everything. Reserved for those who demand the absolute pinnacle.</p>
+        <div class="tier-price">
+          <span class="price-dollar" style="color:var(--platinum);">$</span>
+          <span class="price-amount" style="color:var(--platinum);">299</span>
+          <span class="price-mo">/mo</span>
+        </div>
+        <ul class="tier-features">
+          <li>Everything in Olympian Elite</li>
+          <li>24/7 keycard access</li>
+          <li>Private premium locker</li>
+          <li>Quarterly bloodwork consultation</li>
+          <li>Unlimited coaching sessions</li>
+          <li>Priority booking — all services</li>
+          <li>Exclusive member lounge access</li>
+          <li>Annual body composition analysis</li>
+        </ul>
+        <button class="btn-secondary" style="width:100%;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);border-color:rgba(226,232,240,0.3);cursor:none;" onclick="document.getElementById('footer').scrollIntoView({behavior:'smooth'})">ASCEND TO APEX</button>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:12px;color:var(--iron-gray);margin-top:32px;letter-spacing:0.1em;">
+      All memberships include a 3-day VIP trial. No contracts. Cancel anytime. Results are mandatory.
+    </p>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="testimonials-inner">
+    <div class="testimonials-header reveal-up">
+      <div class="section-eyebrow">// THE HALL OF GODS</div>
+      <h2 class="section-title">VOICES FROM<br><span style="color:var(--crimson);">THE OLYMPUS</span></h2>
+    </div>
+  </div>
+
+  <div class="carousel-wrap">
+    <div class="carousel-track" id="track1">
+      <!-- CARDS duplicated for infinite scroll -->
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">This place isn't a gym. It's an accelerator. My bench went up 45lbs, my focus at work doubled, and I finally understand what training at a elite level actually means.</p>
+        <div class="t-author">
+          <div class="t-avatar">MV</div>
+          <div>
+            <div class="t-name">Marcus V.</div>
+            <div class="t-detail">Software Engineer · 14 months</div>
+          </div>
+        </div>
+        <div class="t-gain">+45 LBS BENCH · -18 LBS FAT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">I was tired of commercial gyms treating women like they only do cardio. Iron Olympus gave me the heavy iron, the elite coaching, and the respect to build real power.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#8b4cf7;">SK</div>
+          <div>
+            <div class="t-name">Sarah K.</div>
+            <div class="t-detail">Powerlifter · 8 months</div>
+          </div>
+        </div>
+        <div class="t-gain">+62 LBS SQUAT · +28 LBS DEADLIFT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The Titan Concierge membership changed my relationship with training. The bloodwork consultations alone optimized my testosterone by 34%. I feel 10 years younger.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#0f7c3e;">DR</div>
+          <div>
+            <div class="t-name">David R.</div>
+            <div class="t-detail">CEO · Titan Concierge · 2 years</div>
+          </div>
+        </div>
+        <div class="t-gain">+34% TESTOSTERONE · -22 LBS FAT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">Coming from CrossFit, I thought I was fit. Iron Olympus broke that illusion in week one and rebuilt me stronger than I imagined possible. This is the real deal.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#b45309;">JL</div>
+          <div>
+            <div class="t-name">Jenna L.</div>
+            <div class="t-detail">Athlete · Olympian Elite · 11 months</div>
+          </div>
+        </div>
+        <div class="t-gain">COMPETED IN FIRST POWERLIFTING MEET</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The recovery lab is black magic. Cryo after a heavy leg day and I'm ready to go again in 24 hours. My training volume doubled in 3 months without any overtraining.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#1d4ed8;">TM</div>
+          <div>
+            <div class="t-name">Tyler M.</div>
+            <div class="t-detail">Bodybuilder · Titan Concierge</div>
+          </div>
+        </div>
+        <div class="t-gain">2X TRAINING VOLUME · ZERO INJURIES</div>
+      </div>
+      <!-- Duplicate for seamless loop -->
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">This place isn't a gym. It's an accelerator. My bench went up 45lbs, my focus at work doubled, and I finally understand what training at an elite level actually means.</p>
+        <div class="t-author">
+          <div class="t-avatar">MV</div>
+          <div>
+            <div class="t-name">Marcus V.</div>
+            <div class="t-detail">Software Engineer · 14 months</div>
+          </div>
+        </div>
+        <div class="t-gain">+45 LBS BENCH · -18 LBS FAT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">I was tired of commercial gyms treating women like they only do cardio. Iron Olympus gave me the heavy iron, the elite coaching, and the respect to build real power.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#8b4cf7;">SK</div>
+          <div>
+            <div class="t-name">Sarah K.</div>
+            <div class="t-detail">Powerlifter · 8 months</div>
+          </div>
+        </div>
+        <div class="t-gain">+62 LBS SQUAT · +28 LBS DEADLIFT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The Titan Concierge membership changed my relationship with training. The bloodwork consultations alone optimized my testosterone by 34%. I feel 10 years younger.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#0f7c3e;">DR</div>
+          <div>
+            <div class="t-name">David R.</div>
+            <div class="t-detail">CEO · Titan Concierge · 2 years</div>
+          </div>
+        </div>
+        <div class="t-gain">+34% TESTOSTERONE · -22 LBS FAT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">Coming from CrossFit, I thought I was fit. Iron Olympus broke that illusion in week one and rebuilt me stronger than I imagined possible. This is the real deal.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#b45309;">JL</div>
+          <div>
+            <div class="t-name">Jenna L.</div>
+            <div class="t-detail">Athlete · Olympian Elite · 11 months</div>
+          </div>
+        </div>
+        <div class="t-gain">COMPETED IN FIRST POWERLIFTING MEET</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The recovery lab is black magic. Cryo after a heavy leg day and I'm ready to go again in 24 hours. My training volume doubled in 3 months without any overtraining.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#1d4ed8;">TM</div>
+          <div>
+            <div class="t-name">Tyler M.</div>
+            <div class="t-detail">Bodybuilder · Titan Concierge</div>
+          </div>
+        </div>
+        <div class="t-gain">2X TRAINING VOLUME · ZERO INJURIES</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="carousel-wrap" style="margin-top:16px;">
+    <div class="carousel-track reverse" id="track2">
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">I joined as a complete beginner and the coaching team built me from the ground up. 6 months later I'm lifting numbers I never thought possible for someone my size.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#7c3aed;">AP</div>
+          <div><div class="t-name">Alex P.</div><div class="t-detail">Beginner → Intermediate · 6 months</div></div>
+        </div>
+        <div class="t-gain">FROM 0 TO 140KG DEADLIFT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The environment here is different. You feel the energy the moment you walk in. Everyone is pushing hard, respecting each other, and winning together. It's addictive.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#dc2626;">NW</div>
+          <div><div class="t-name">Naomi W.</div><div class="t-detail">HIIT & Strength · 9 months</div></div>
+        </div>
+        <div class="t-gain">-31 LBS · PR EVERY MONTH</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">As a former D1 athlete, I've trained in serious facilities. Iron Olympus is the only commercial gym that matches — and in some areas exceeds — that collegiate level equipment.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#065f46;">CB</div>
+          <div><div class="t-name">Carlos B.</div><div class="t-detail">Former D1 Athlete · 18 months</div></div>
+        </div>
+        <div class="t-gain">RETURNED TO COMPETITION AT 38</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The nutrition and bio-metric coaching completely changed my understanding of my own body. No more guessing. Pure data-driven results. I'm finally in the best shape of my life.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#92400e;">RH</div>
+          <div><div class="t-name">Rachel H.</div><div class="t-detail">Fitness Model · Titan Concierge</div></div>
+        </div>
+        <div class="t-gain">COMPETITION PREP IN 16 WEEKS</div>
+      </div>
+      <!-- Duplicates -->
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">I joined as a complete beginner and the coaching team built me from the ground up. 6 months later I'm lifting numbers I never thought possible for someone my size.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#7c3aed;">AP</div>
+          <div><div class="t-name">Alex P.</div><div class="t-detail">Beginner → Intermediate · 6 months</div></div>
+        </div>
+        <div class="t-gain">FROM 0 TO 140KG DEADLIFT</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The environment here is different. You feel the energy the moment you walk in. Everyone is pushing hard, respecting each other, and winning together. It's addictive.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#dc2626;">NW</div>
+          <div><div class="t-name">Naomi W.</div><div class="t-detail">HIIT & Strength · 9 months</div></div>
+        </div>
+        <div class="t-gain">-31 LBS · PR EVERY MONTH</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">As a former D1 athlete, I've trained in serious facilities. Iron Olympus is the only commercial gym that matches — and in some areas exceeds — that collegiate level equipment.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#065f46;">CB</div>
+          <div><div class="t-name">Carlos B.</div><div class="t-detail">Former D1 Athlete · 18 months</div></div>
+        </div>
+        <div class="t-gain">RETURNED TO COMPETITION AT 38</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">The nutrition and bio-metric coaching completely changed my understanding of my own body. No more guessing. Pure data-driven results. I'm finally in the best shape of my life.</p>
+        <div class="t-author">
+          <div class="t-avatar" style="background:#92400e;">RH</div>
+          <div><div class="t-name">Rachel H.</div><div class="t-detail">Fitness Model · Titan Concierge</div></div>
+        </div>
+        <div class="t-gain">COMPETITION PREP IN 16 WEEKS</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER / CLOSING VOID -->
+<footer id="footer">
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+    <div class="glow-orb" style="width:800px;height:800px;background:rgba(255,69,0,0.04);top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+  </div>
+  <div class="footer-cta-section">
+    <div class="section-eyebrow reveal-up">// THE FINAL CALL</div>
+    <h2 class="footer-headline reveal-up">
+      STOP<br>WATCHING.<br>
+      <span style="color:var(--crimson);">START<br>BECOMING.</span>
+    </h2>
+    <p class="footer-sub reveal-up">
+      Every elite body you've ever admired started with one decision. This is yours.
+    </p>
+
+    <div class="email-form reveal-up" id="emailForm">
+      <input type="email" class="email-input" id="emailInput" placeholder="ENTER YOUR EMAIL TO AGGRESSIVELY PURSUE EXCELLENCE"/>
+      <button class="email-submit" onclick="handleEmailSubmit()">SUBMIT →</button>
+    </div>
+    <div id="emailSuccess" style="display:none;margin-bottom:48px;padding:20px;border:1px solid var(--crimson);background:rgba(255,69,0,0.08);max-width:580px;margin-left:auto;margin-right:auto;">
+      <p style="font-family:'Syne',sans-serif;font-size:14px;letter-spacing:0.2em;text-transform:uppercase;color:var(--crimson);">⚡ WELCOME TO THE OLYMPUS</p>
+      <p style="font-size:12px;color:var(--iron-gray);margin-top:8px;">Your VIP access details are on their way. Prepare for the transformation of your life.</p>
+    </div>
+
+    <div class="footer-social-row reveal-up">
+      <a class="social-icon-btn" href="https://wa.me/15551234567" target="_blank" title="WhatsApp">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </a>
+      <a class="social-icon-btn" href="https://instagram.com/ironolympus" target="_blank" title="Instagram">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </a>
+      <a class="social-icon-btn" href="https://facebook.com/ironolympus" target="_blank" title="Facebook">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </a>
+      <a class="social-icon-btn" href="https://tiktok.com/@ironolympus" target="_blank" title="TikTok">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.26 8.26 0 004.84 1.55V6.78a4.85 4.85 0 01-1.07-.09z"/></svg>
+      </a>
+      <a class="social-icon-btn" href="https://youtube.com/ironolympus" target="_blank" title="YouTube">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+      </a>
+    </div>
+
+    <!-- CONTACT INFO -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;max-width:700px;margin:0 auto 64px;text-align:left;" class="reveal-up">
+      <div>
+        <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--crimson);margin-bottom:8px;font-weight:700;">LOCATION</div>
+        <p style="font-size:13px;color:var(--platinum);line-height:1.6;">1 Olympus Plaza<br>Suite 100<br>New York, NY 10001</p>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--crimson);margin-bottom:8px;font-weight:700;">HOURS</div>
+        <p style="font-size:13px;color:var(--platinum);line-height:1.6;">24/7 Keycard Access<br>Staff: Mon–Fri 5am–10pm<br>Sat–Sun 6am–8pm</p>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--crimson);margin-bottom:8px;font-weight:700;">CONTACT</div>
+        <p style="font-size:13px;line-height:1.6;">
+          <a href="tel:+15551234567" style="color:var(--platinum);text-decoration:none;display:block;">+1 (555) 123-4567</a>
+          <a href="mailto:forge@ironolympus.com" style="color:var(--platinum);text-decoration:none;display:block;">forge@ironolympus.com</a>
+          <a href="https://wa.me/15551234567" target="_blank" style="color:var(--crimson);text-decoration:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;display:block;">WhatsApp Us →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="footer-logo">IRON <span>OLYMPUS</span></div>
+    <ul class="footer-links">
+      <li><a href="#">Privacy Policy</a></li>
+      <li><a href="#">Terms of Service</a></li>
+      <li><a href="#">Membership Agreement</a></li>
+      <li><a href="#">Health Waiver</a></li>
+      <li><a href="#">Careers</a></li>
+      <li><a href="#">Press</a></li>
+    </ul>
+    <div class="footer-copy">© 2026 Iron Olympus. All rights reserved. Forged in Excellence.</div>
+  </div>
+</footer>
+
+<script>
+/* ===================== CURSOR ===================== */
+const cursor=document.getElementById('cursor');
+const trail=document.getElementById('cursor-trail');
+let mx=0,my=0,tx=0,ty=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cursor.style.left=mx+'px';cursor.style.top=my+'px';
+});
+function animTrail(){
+  tx+=(mx-tx)*0.12;ty+=(my-ty)*0.12;
+  trail.style.left=tx+'px';trail.style.top=ty+'px';
+  requestAnimationFrame(animTrail);
+}
+animTrail();
+document.querySelectorAll('a,button,.lift-btn,.quiz-opt,.steel-card').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{
+    cursor.style.width='24px';cursor.style.height='24px';
+    trail.style.width='56px';trail.style.height='56px';
+  });
+  el.addEventListener('mouseleave',()=>{
+    cursor.style.width='14px';cursor.style.height='14px';
+    trail.style.width='36px';trail.style.height='36px';
+  });
+});
+
+/* ===================== PRELOADER ===================== */
+const loaderCanvas=document.getElementById('loader-canvas');
+const lctx=loaderCanvas.getContext('2d');
+const loaderText=document.getElementById('loader-text');
+const progressBar=document.getElementById('progress-bar');
+const progressPct=document.getElementById('progress-pct');
+
+const msgs=['INITIALIZING SYSTEMS...','LOADING ADRENALINE...','FORGING ASSETS...','CALIBRATING PERFORMANCE...','WELCOME TO THE OLYMPUS.'];
+let msgIdx=0,progress=0;
+
+// Wireframe Greek god - simplified animated figure
+function drawFigure(angle){
+  lctx.clearRect(0,0,200,200);
+  const cx=100,cy=100;
+  const s=Math.sin(angle*0.5),c=Math.cos(angle*0.5);
+  
+  lctx.strokeStyle='rgba(255,69,0,0.8)';
+  lctx.lineWidth=1.5;
+  lctx.shadowColor='rgba(255,69,0,0.6)';
+  lctx.shadowBlur=8;
+  lctx.beginPath();
+  
+  // Body torso (rhombus shape)
+  const pts=[
+    [cx,cy-40],[cx+20,cy-20],[cx+20,cy+10],[cx,cy+30],[cx-20,cy+10],[cx-20,cy-20]
+  ];
+  lctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++)lctx.lineTo(pts[i][0]+s*3,pts[i][1]);
+  lctx.closePath();lctx.stroke();
+  
+  // Head
+  lctx.beginPath();
+  lctx.arc(cx+s*2,cy-52,12,0,Math.PI*2);lctx.stroke();
+  
+  // Arms raised (double bicep pose)
+  lctx.beginPath();
+  lctx.moveTo(cx-20,cy-16);
+  lctx.lineTo(cx-42+c*3,cy-30);
+  lctx.lineTo(cx-48+c*3,cy-14);
+  lctx.stroke();
+  lctx.beginPath();
+  lctx.moveTo(cx+20,cy-16);
+  lctx.lineTo(cx+42-c*3,cy-30);
+  lctx.lineTo(cx+48-c*3,cy-14);
+  lctx.stroke();
+  
+  // Legs
+  lctx.beginPath();
+  lctx.moveTo(cx-8,cy+30);lctx.lineTo(cx-12,cy+58);lctx.lineTo(cx-6,cy+75);
+  lctx.stroke();
+  lctx.beginPath();
+  lctx.moveTo(cx+8,cy+30);lctx.lineTo(cx+12,cy+58);lctx.lineTo(cx+6,cy+75);
+  lctx.stroke();
+  
+  // Fist circles
+  lctx.beginPath();lctx.arc(cx-48+c*3,cy-10,5,0,Math.PI*2);lctx.stroke();
+  lctx.beginPath();lctx.arc(cx+48-c*3,cy-10,5,0,Math.PI*2);lctx.stroke();
+  
+  // Glow dots
+  lctx.fillStyle='rgba(255,69,0,0.9)';
+  pts.forEach(p=>{
+    lctx.beginPath();
+    lctx.arc(p[0]+s*3,p[1],2,0,Math.PI*2);
+    lctx.fill();
+  });
+}
+
+let angle=0;
+function animLoader(){
+  drawFigure(angle);
+  angle+=0.04;
+  if(progress<100)requestAnimationFrame(animLoader);
+}
+animLoader();
+
+let interval=setInterval(()=>{
+  progress+=1.6;
+  if(progress>100)progress=100;
+  progressBar.style.width=progress+'%';
+  progressPct.textContent=Math.round(progress)+'%';
+  if(progress%(100/msgs.length)<2&&msgIdx<msgs.length){
+    loaderText.textContent=msgs[msgIdx++];
+  }
+  if(progress>=100){
+    clearInterval(interval);
+    loaderText.innerHTML='<span style="color:#fff;font-size:22px;letter-spacing:0.3em;">WELCOME TO THE OLYMPUS.</span>';
+    setTimeout(()=>{
+      document.getElementById('preloader').classList.add('open');
+      setTimeout(()=>{
+        document.getElementById('preloader').style.display='none';
+        initSite();
+      },900);
+    },500);
+  }
+},40);
+
+/* ===================== HERO PARTICLE CANVAS ===================== */
+function initHeroCanvas(){
+  const canvas=document.getElementById('hero-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  
+  const particles=[];
+  const count=120;
+  for(let i=0;i<count;i++){
+    particles.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height,
+      vx:(Math.random()-0.5)*0.4,
+      vy:(Math.random()-0.5)*0.4,
+      size:Math.random()*2+0.5,
+      opacity:Math.random()*0.6+0.1,
+      color:Math.random()>0.7?'255,69,0':'226,232,240'
+    });
+  }
+  
+  let mouse={x:canvas.width/2,y:canvas.height/2};
+  document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+  
+  function drawParticles(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach((p,i)=>{
+      // Mouse influence
+      const dx=mouse.x-p.x,dy=mouse.y-p.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<200){
+        p.vx-=dx/dist*0.015;
+        p.vy-=dy/dist*0.015;
+      }
+      p.vx*=0.99;p.vy*=0.99;
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=canvas.width;
+      if(p.x>canvas.width)p.x=0;
+      if(p.y<0)p.y=canvas.height;
+      if(p.y>canvas.height)p.y=0;
+      
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${p.color},${p.opacity})`;
+      ctx.fill();
+      
+      // Connect nearby particles
+      particles.slice(i+1,i+6).forEach(p2=>{
+        const d=Math.sqrt((p.x-p2.x)**2+(p.y-p2.y)**2);
+        if(d<100){
+          ctx.beginPath();
+          ctx.moveTo(p.x,p.y);ctx.lineTo(p2.x,p2.y);
+          ctx.strokeStyle=`rgba(255,69,0,${0.08*(1-d/100)})`;
+          ctx.lineWidth=0.5;ctx.stroke();
+        }
+      });
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  drawParticles();
+  window.addEventListener('resize',()=>{
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+  });
+}
+
+/* ===================== STAT COUNTER ===================== */
+function animateCounter(id,target,suffix){
+  const el=document.getElementById(id);
+  let current=0;
+  const inc=target/60;
+  const timer=setInterval(()=>{
+    current+=inc;
+    if(current>=target){current=target;clearInterval(timer);}
+    el.textContent=Math.round(current);
+  },25);
+}
+
+/* ===================== SCROLL REVEAL ===================== */
+function initReveal(){
+  const observer=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('revealed');
+      }
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('.reveal-up').forEach(el=>observer.observe(el));
+}
+
+/* ===================== SCROLL PROGRESS ===================== */
+function initScrollProgress(){
+  const bar=document.getElementById('scroll-progress');
+  window.addEventListener('scroll',()=>{
+    const pct=window.scrollY/(document.documentElement.scrollHeight-window.innerHeight)*100;
+    bar.style.width=pct+'%';
+    document.getElementById('back-to-top').classList.toggle('visible',window.scrollY>500);
+  });
+}
+
+/* ===================== PHOTO GRID FLASH ===================== */
+function initPhotoFlash(){
+  const cards=['pc1','pc2','pc3','pc4'];
+  function flash(){
+    const idx=Math.floor(Math.random()*cards.length);
+    const card=document.getElementById(cards[idx]);
+    card.classList.add('flash');
+    setTimeout(()=>card.classList.remove('flash'),500);
+  }
+  setInterval(flash,2200);
+}
+
+/* ===================== PR PREDICTOR ===================== */
+let selectedLift='Bench Press';
+function selectLift(btn){
+  document.querySelectorAll('.lift-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedLift=btn.dataset.lift;
+}
+function calculatePR(){
+  const bw=parseInt(document.getElementById('bodyWeight').value);
+  const lift=parseInt(document.getElementById('currentLift').value);
+  const target=Math.round(lift*1.25);
+  const output=document.getElementById('prOutput');
+  const prVal=document.getElementById('prValue');
+  const prMsg=document.getElementById('prMsg');
+  
+  prVal.textContent=target+' KG';
+  prMsg.textContent=`YOUR CURRENT ${selectedLift.toUpperCase()} IS BEING WASTED. WITH OUR PROGRAMMING, YOU WILL HIT ${target}KG WITHIN 90 DAYS. YOUR BODY IS CAPABLE. YOUR PROGRAMMING ISN'T. YET.`;
+  output.classList.add('visible');
+  
+  // Screen shake
+  document.body.classList.add('screen-shake');
+  setTimeout(()=>document.body.classList.remove('screen-shake'),400);
+  
+  // Flash
+  prVal.style.color='#fff';
+  setTimeout(()=>prVal.style.color='var(--crimson)',200);
+}
+
+/* ===================== TRIVIA ===================== */
+const questions=[
+  {
+    q:"What is the most important variable for muscle hypertrophy according to modern sports science?",
+    opts:["Daily protein intake","Progressive overload","Sleep duration","Supplement quality"],
+    a:1
+  },
+  {
+    q:"The 'mind-muscle connection' is:",
+    opts:["A myth — weight is weight","Scientifically proven to increase muscle activation","Only relevant for beginners","Only applies to isolation exercises"],
+    a:1
+  },
+  {
+    q:"Testosterone production is MOST suppressed by:",
+    opts:["Heavy compound lifting","High volume training","Chronic sleep deprivation","Cold exposure"],
+    a:2
+  },
+  {
+    q:"Which rep range is EXCLUSIVELY effective for building strength?",
+    opts:["1-5 reps only","6-12 reps only","Any rep range with sufficient effort","15+ reps only"],
+    a:2
+  },
+  {
+    q:"What does the research say about training to failure?",
+    opts:["Always necessary for muscle growth","Never needed — stop before failure","Useful occasionally, not every set","Only works for advanced athletes"],
+    a:2
+  }
+];
+
+let qIdx=0,score=0;
+function loadQuestion(){
+  const q=questions[qIdx];
+  document.getElementById('quizQ').textContent=`Q${qIdx+1}. ${q.q}`;
+  const opts=document.getElementById('quizOpts');
+  opts.innerHTML='';
+  q.opts.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='quiz-opt';
+    btn.textContent=opt;
+    btn.onclick=()=>answerQ(i,btn);
+    opts.appendChild(btn);
+  });
+}
+function answerQ(chosen,btn){
+  const q=questions[qIdx];
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.onclick=null);
+  if(chosen===q.a){
+    btn.classList.add('correct');score++;
+  }else{
+    btn.classList.add('wrong');
+    document.querySelectorAll('.quiz-opt')[q.a].classList.add('correct');
+  }
+  document.getElementById('pip'+qIdx).classList.add('done');
+  qIdx++;
+  setTimeout(()=>{
+    if(qIdx<questions.length){loadQuestion();}
+    else{showResult();}
+  },900);
+}
+function showResult(){
+  document.getElementById('quizGame').style.display='none';
+  const result=document.getElementById('quizResult');
+  result.classList.add('visible');
+  const title=document.getElementById('resultTitle');
+  const desc=document.getElementById('resultDesc');
+  const cta=document.getElementById('resultCTA');
+  if(score===5){
+    title.textContent='STATUS: ALPHA TITAN';
+    desc.textContent='Perfect score. You know your iron. Come collect your reward: a free premium shaker cup and pre-workout shot at the front desk — on us. You\'ve earned your place on the Olympus.';
+    cta.textContent='CLAIM YOUR PRIZE →';
+  }else if(score>=3){
+    title.textContent='STATUS: ASCENDING WARRIOR';
+    desc.textContent='Solid knowledge base. You know enough to be dangerous. Our coaching team will sharpen the gaps and accelerate your progress exponentially.';
+    cta.textContent='BOOK A CONSULTATION →';
+  }else{
+    title.textContent='STATUS: DORMANT POTENTIAL';
+    desc.textContent='You need the iron sanctuary immediately. The knowledge gaps are costing you gains every single day. Claim your free 3-day pass and let us unlock what\'s been sleeping inside you.';
+    cta.textContent='CLAIM YOUR FREE PASS →';
+  }
+}
+function restartQuiz(){
+  qIdx=0;score=0;
+  document.getElementById('quizGame').style.display='block';
+  document.getElementById('quizResult').classList.remove('visible');
+  document.querySelectorAll('.quiz-pip').forEach(p=>p.classList.remove('done'));
+  loadQuestion();
+}
+
+/* ===================== EMAIL FORM ===================== */
+function handleEmailSubmit(){
+  const email=document.getElementById('emailInput').value.trim();
+  if(!email||!email.includes('@')){
+    document.getElementById('emailInput').style.borderColor='var(--crimson)';
+    document.getElementById('emailInput').placeholder='VALID EMAIL REQUIRED, CHAMPION';
+    return;
+  }
+  // Simulate backend submission
+  document.getElementById('emailForm').style.display='none';
+  document.getElementById('emailSuccess').style.display='block';
+  
+  // Would POST to backend here:
+  // fetch('/api/subscribe', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})})
+  console.log('[IRON OLYMPUS BACKEND] Email captured:',email);
+}
+
+/* ===================== MAIN INIT ===================== */
+function initSite(){
+  initHeroCanvas();
+  initReveal();
+  initScrollProgress();
+  initPhotoFlash();
+  loadQuestion();
+  
+  // Stat counters
+  setTimeout(()=>{
+    animateCounter('stat1',3200,'');
+    animateCounter('stat2',45,'');
+    animateCounter('stat3',24,'');
+  },300);
+  
+  // Navbar scroll effect
+  window.addEventListener('scroll',()=>{
+    const nav=document.getElementById('navbar');
+    if(window.scrollY>80){
+      nav.style.padding='14px 48px';
+      nav.style.borderBottomColor='rgba(255,69,0,0.15)';
+    }else{
+      nav.style.padding='20px 48px';
+      nav.style.borderBottomColor='rgba(255,69,0,0.1)';
+    }
+  });
+}
+
+/* ===================== BACKEND SIMULATION ===================== */
+// Simulated backend API handlers
+const IronOlympusAPI = {
+  baseURL: '/api/iron-olympus',
+  
+  async subscribe(email) {
+    // POST /api/subscribe
+    return new Promise(resolve => {
+      setTimeout(() => {
+        console.log('[API] New subscriber:', email);
+        resolve({ success: true, message: 'Subscribed successfully', email });
+      }, 500);
+    });
+  },
+  
+  async bookVipPass(data) {
+    // POST /api/book-vip-pass
+    return new Promise(resolve => {
+      setTimeout(() => {
+        console.log('[API] VIP Pass booked:', data);
+        resolve({ success: true, bookingId: 'IO-' + Date.now(), ...data });
+      }, 600);
+    });
+  },
+  
+  async getMembership(tierId) {
+    // GET /api/membership/:id
+    const tiers = {
+      'iron-mind': { id: 'iron-mind', price: 69, name: 'Iron Mind', stripeProductId: 'prod_iron_mind' },
+      'olympian-elite': { id: 'olympian-elite', price: 129, name: 'Olympian Elite', stripeProductId: 'prod_olympian_elite' },
+      'titan-concierge': { id: 'titan-concierge', price: 299, name: 'Titan Concierge', stripeProductId: 'prod_titan_concierge' }
+    };
+    return tiers[tierId] || null;
+  },
+  
+  async trackPRCalculation(data) {
+    // POST /api/analytics/pr-calculation
+    console.log('[Analytics] PR calculated:', data);
+    return { logged: true };
+  },
+  
+  async trackQuizResult(data) {
+    // POST /api/analytics/quiz-result  
+    console.log('[Analytics] Quiz completed:', data);
+    return { logged: true };
+  },
+  
+  async contactWhatsApp(message) {
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/15551234567?text=${encoded}`, '_blank');
+  }
+};
+
+// Expose globally
+window.IronOlympusAPI = IronOlympusAPI;
+
+// Enhanced calculatePR with backend logging
+const _calcPR = calculatePR;
+window.calculatePR = function() {
+  _calcPR();
+  const bw = parseInt(document.getElementById('bodyWeight').value);
+  const lift = parseInt(document.getElementById('currentLift').value);
+  IronOlympusAPI.trackPRCalculation({ lift: selectedLift, bodyWeight: bw, currentLift: lift, projectedLift: Math.round(lift * 1.25) });
+};
+
+// Enhanced quiz result with backend logging
+const _showResult = showResult;
+window.showResult = function() {
+  _showResult();
+  IronOlympusAPI.trackQuizResult({ score, total: questions.length, timestamp: new Date().toISOString() });
+};
+
+// Enhanced email submit with real API call
+window.handleEmailSubmit = async function() {
+  const email = document.getElementById('emailInput').value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('emailInput').style.borderColor = 'var(--crimson)';
+    document.getElementById('emailInput').placeholder = 'VALID EMAIL REQUIRED, CHAMPION';
+    return;
+  }
+  const result = await IronOlympusAPI.subscribe(email);
+  if (result.success) {
+    document.getElementById('emailForm').style.display = 'none';
+    document.getElementById('emailSuccess').style.display = 'block';
+  }
+};
+</script>
+</body>
+</html>
